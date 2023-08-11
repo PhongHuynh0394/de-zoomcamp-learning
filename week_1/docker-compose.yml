@@ -1,0 +1,42 @@
+services:
+  pg_db:
+    container_name: postgres
+    image: postgres:13
+    environment:
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=root
+      - POSTGRES_DB=ny_taxi 
+    volumes:
+      - ./ny_taxi_pgdata:/var/lib/postgresql/data:rw
+    ports:
+      - 5432:5432
+    networks:
+      - pg_net
+  
+  pgadmin:
+    container_name: pgadmin
+    image: dpage/pgadmin4
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@admin.com
+      - PGADMIN_DEFAULT_PASSWORD=root
+    ports:
+      - 8080:80
+    networks:
+      - pg_net
+  
+  notebook:
+    container_name: notebook
+    build:
+      context: ./notebook
+    volumes:
+      - ./notebook:/home/jovyan/work
+    ports:
+      - 8889:8889
+    command: jupyter notebook
+    networks:
+      - pg_net 
+  
+networks:
+  pg_net:
+    driver: bridge
+    name: pg_net
