@@ -11,6 +11,7 @@ Source: [NY taxi data](https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.p
 ```bash
 # yellow taxi data
 URL=https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2021-01.parquet
+
 ```
 To push data into database, go into notebook folder and run the .py file with the following params:
 ```python
@@ -27,3 +28,7 @@ python3 data_ingestion.py \
 ```bash
 docker exec -it notebookk bash
 ```
+
+## GCP Intro and Terrafrom
+### Terrafrom
+

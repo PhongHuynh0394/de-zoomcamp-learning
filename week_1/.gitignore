@@ -1,3 +1,5 @@
 /ny_taxi_pgdata
 /notebook/.ipynb_checkpoints
 /notebook/output.parquet
+/GCP/user-service-key.json
+
