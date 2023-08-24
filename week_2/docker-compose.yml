@@ -1,0 +1,43 @@
+# docker exec -it db2 bash -c 'su - db2inst1'
+services:
+  db2:
+    container_name: db2
+    image: ibmcom/db2
+    privileged: true
+    ports:
+      - 50000:50000
+    env_file:
+      - .env
+    volumes:
+      - ./db2_database:/database
+    networks:
+      - docker-net
+
+  pg_db:
+    container_name: postgres
+    image: postgres:13
+    env_file:
+      - .env
+    volumes:
+      - ./ny_taxi_pgdata:/var/lib/postgresql/data:rw
+    ports:
+      - 5432:5432
+    networks:
+      - docker-net 
+
+  pgadmin:
+    container_name: pgadmin
+    image: dpage/pgadmin4
+    env_file:
+      - .env
+    ports:
+      - 8080:80
+    networks:
+      - docker-net 
+     
+networks:
+  docker-net:
+    name: docker-net 
+    driver: bridge
+
+
