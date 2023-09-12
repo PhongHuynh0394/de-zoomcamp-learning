@@ -1,4 +1,5 @@
 import pandas as pd
+from hdfs import InsecureClient
 from time import time
 from datetime import timedelta
 import pyarrow.parquet as pq
@@ -39,7 +40,7 @@ def ingest_data(params, df: pd.DataFrame):
     chunksize = 100_000
     df.to_csv('cleaned.csv')
 
-    # connect to Database
+    # connect to Database Postgres
     connection_block = SqlAlchemyConnector.load("postgres-connector")
     with connection_block.get_connection(begin=False) as engine:
         # load by chunk
@@ -52,6 +53,21 @@ def ingest_data(params, df: pd.DataFrame):
     os.remove('cleaned.csv')
     print('Remove file successfully')
 
+@task(log_prints=True)
+def push_hdfs(df: pd.DataFrame) -> None:
+    '''pusing file into HDFS container'''
+
+    namenode_host='http://localhost'
+    port=9870
+    # my_client = KerberosClient(namenode_host+':'+str(port))
+
+    dir = 'user/test/'
+    # Connect with HaDoop File System
+
+    hdfs = InsecureClient(f'{namenode_host}:{port}', user='root')
+    # Write file into HDFS
+
+
 
 @flow(name="Ingest flow")
 def main():
@@ -62,7 +78,8 @@ def main():
 
     raw_data = extract_data(URL)
     data = transform_data(raw_data)
-    ingest_data(args, data)
+    # ingest_data(args, data)
+    push_hdfs()
 
 if __name__ == "__main__":
     main()

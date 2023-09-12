@@ -31,6 +31,7 @@ def clean(df: pd.DataFrame) -> pd.DataFrame:
 @task()
 def write_gcs(path: Path) -> None:
     """write file to GCS"""
+    pass
 
 @flow()
 def etl_web_to_gcs() -> None:
