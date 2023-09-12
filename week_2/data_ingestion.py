@@ -1,14 +1,14 @@
 import pandas as pd
-from hdfs import InsecureClient
+from hdfs3 import HDFileSystem
 from time import time
 from datetime import timedelta
-import pyarrow.parquet as pq
+# import pyarrow.parquet as pq
 import os
 from sqlalchemy import create_engine
 import argparse as arg
 from prefect import flow, task
 from prefect.tasks import task_input_hash
-from prefect_sqlalchemy import SqlAlchemyConnector
+# from prefect_sqlalchemy import SqlAlchemyConnector
 
 @task(log_prints=True, retries=3, cache_key_fn=task_input_hash, cache_expiration=timedelta(days=1))
 def extract_data(url) -> pd.DataFrame:
@@ -54,19 +54,33 @@ def ingest_data(params, df: pd.DataFrame):
     print('Remove file successfully')
 
 @task(log_prints=True)
-def push_hdfs(df: pd.DataFrame) -> None:
+def push_hdfs(params, df: pd.DataFrame) -> None:
     '''pusing file into HDFS container'''
 
-    namenode_host='http://localhost'
-    port=9870
-    # my_client = KerberosClient(namenode_host+':'+str(port))
+    table_name = params.table_name
+    namenode_host='localhost'
+    port=8020
 
-    dir = 'user/test/'
     # Connect with HaDoop File System
+    print('Connecting to HDFS...')
+    hdfs = HDFileSystem(namenode_host, port)
+    print('Done...')
 
-    hdfs = InsecureClient(f'{namenode_host}:{port}', user='root')
-    # Write file into HDFS
+    #Create dir
+    dir = '/phong_huynh/'
+    if not hdfs.exists(dir):
+        print(f"Directory {dir} doesn't exists! Create {dir}")
+        hdfs.mkdir(dir)
+        print('Done...')
 
+    # Writing file into HDFS
+    try:
+        print(f'HDFS: Start writing table {table_name} into {dir}')
+        with hdfs.open(f"{dir}{table_name}.csv", "wb") as file:
+            df.to_csv(file, chunksize=100000)
+        print('Done writing {table_name}.csv into {dir}')
+    except Exception as e:
+        print(f"Error: {e}")
 
 
 @flow(name="Ingest flow")
@@ -79,7 +93,7 @@ def main():
     raw_data = extract_data(URL)
     data = transform_data(raw_data)
     # ingest_data(args, data)
-    push_hdfs()
+    push_hdfs(args, data)
 
 if __name__ == "__main__":
     main()
