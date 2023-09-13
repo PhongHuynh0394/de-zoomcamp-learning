@@ -1,4 +1,5 @@
 import pandas as pd
+from pathlib import Path
 from hdfs3 import HDFileSystem
 from time import time
 from datetime import timedelta
@@ -8,7 +9,7 @@ from sqlalchemy import create_engine
 import argparse as arg
 from prefect import flow, task
 from prefect.tasks import task_input_hash
-# from prefect_sqlalchemy import SqlAlchemyConnector
+from prefect_sqlalchemy import SqlAlchemyConnector
 
 @task(log_prints=True, retries=3, cache_key_fn=task_input_hash, cache_expiration=timedelta(days=1))
 def extract_data(url) -> pd.DataFrame:
@@ -35,31 +36,45 @@ def transform_data(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 @task(log_prints=True, retries=3)
-def ingest_data(params, df: pd.DataFrame):
+def ingest_data_psql(params, df: pd.DataFrame):
     table_name = params.table_name
     chunksize = 100_000
-    df.to_csv('cleaned.csv')
+    df.to_csv('raw_data.csv')
 
     # connect to Database Postgres
     connection_block = SqlAlchemyConnector.load("postgres-connector")
     with connection_block.get_connection(begin=False) as engine:
         # load by chunk
-        for table in pd.read_csv('cleaned.csv', chunksize=chunksize):
+        for table in pd.read_csv('raw_data.csv', chunksize=chunksize):
             start = time()
             table.to_sql(table_name, con=engine, if_exists='append')
             end = time()
             print(f'successfully pushing {len(table)} data into database... take {round(end - start, 2)} second')
 
-    os.remove('cleaned.csv')
+    os.remove('raw_data.csv')
     print('Remove file successfully')
 
-@task(log_prints=True)
-def push_hdfs(params, df: pd.DataFrame) -> None:
-    '''pusing file into HDFS container'''
 
+@task(log_prints=True)
+def extract_psql(params) -> pd.DataFrame:
+    '''Extract data from psql to push to hdfs'''
     table_name = params.table_name
+    query = f"SELECT * FROM {table_name}"
+
+    # connect to Database Postgres
+    connection_block = SqlAlchemyConnector.load("postgres-connector")
+    with connection_block.get_connection(begin=False) as engine:
+        df = pd.read_sql_query(query, engine)
+
+    return df
+
+@task(log_prints=True)
+def write_hdfs(params, df: pd.DataFrame) -> None:
+    '''write file into HDFS container'''
+
     namenode_host='localhost'
     port=8020
+    table_name = params.table_name
 
     # Connect with HaDoop File System
     print('Connecting to HDFS...')
@@ -67,18 +82,18 @@ def push_hdfs(params, df: pd.DataFrame) -> None:
     print('Done...')
 
     #Create dir
-    dir = '/phong_huynh/'
+    dir = '/raw_data/'
     if not hdfs.exists(dir):
         print(f"Directory {dir} doesn't exists! Create {dir}")
         hdfs.mkdir(dir)
         print('Done...')
 
-    # Writing file into HDFS
+    # Pusing file into HDFS
     try:
-        print(f'HDFS: Start writing table {table_name} into {dir}')
-        with hdfs.open(f"{dir}{table_name}.csv", "wb") as file:
-            df.to_csv(file, chunksize=100000)
-        print('Done writing {table_name}.csv into {dir}')
+        print(f'HDFS: Start pusing file')
+        with hdfs.open(f"{dir}{table_name}.parquet", "wb") as file:
+            df.to_parquet(file)
+        print(f'HDFS: Done writing {table_name}.parquet into {dir}')
     except Exception as e:
         print(f"Error: {e}")
 
@@ -90,10 +105,11 @@ def main():
     parser.add_argument('--table_name', help='name of the table where is written result to',default="yellow_taxi_data")
     args = parser.parse_args()
 
-    raw_data = extract_data(URL)
-    data = transform_data(raw_data)
-    # ingest_data(args, data)
-    push_hdfs(args, data)
+    # data = transform_data(raw_data)
+    data_extracted = extract_data(URL)
+    ingest_data_psql(args, data_extracted)
+    raw_data = extract_psql(args)
+    write_hdfs(args, raw_data)
 
 if __name__ == "__main__":
     main()

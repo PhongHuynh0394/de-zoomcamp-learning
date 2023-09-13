@@ -2,22 +2,18 @@
 include:
   - path: ../hadoop/docker-compose.yml
 
-# services:
-#   hdfs_db:
-#     container_name: hdfs
-#     image: sequenceiq/hadoop-docker:2.7.1
-    
-  # pg_db:
-  #   container_name: postgres
-  #   image: postgres:13
-  #   env_file:
-  #     - .env
-  #   volumes:
-  #     - ./ny_taxi_pgdata:/var/lib/postgresql/data:rw
-  #   ports:
-  #     - 5432:5432
-  #   networks:
-  #     - docker-net 
+services:
+  pg_db:
+    container_name: postgres
+    image: postgres:13
+    env_file:
+      - .env
+    volumes:
+      - ./ny_taxi_pgdata:/var/lib/postgresql/data:rw
+    ports:
+      - 5432:5432
+    networks:
+      - docker-net 
 
   # pgadmin:
   #   container_name: pgadmin
@@ -29,7 +25,7 @@ include:
   #   networks:
   #     - docker-net 
 
-  # hive_db:
+  # hive:
   #   container_name: hive
   #   image: apache/hive:4.0.0-beta-1
   #   ports:
@@ -37,18 +33,5 @@ include:
   #     - 10002:10002
   #   environment:
   #     - SERVICE_NAME=hiveserver2
-  #   networks:
-  #     - docker-net
-
-  # db2:
-  #   container_name: db2
-  #   image: ibmcom/db2
-  #   privileged: true
-  #   ports:
-  #     - 50000:50000
-  #   env_file:
-  #     - .env
-  #   volumes:
-  #     - ./db2_database:/database
   #   networks:
   #     - docker-net

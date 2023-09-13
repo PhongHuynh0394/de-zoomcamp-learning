@@ -1,7 +1,7 @@
 from pathlib import Path
 import pandas as pd
 from prefect import flow, task
-from prefect_gcp.cloud_storage import GcsBucket
+from hdfs3 import HDFileSystem
 
 @task(retries=3)
 def fetch(dataset_url: str) -> pd.DataFrame:
@@ -28,13 +28,39 @@ def clean(df: pd.DataFrame) -> pd.DataFrame:
     print(f"rows: {len(df)}")
     return df
 
-@task()
-def write_gcs(path: Path) -> None:
-    """write file to GCS"""
-    pass
+@task(log_prints=True)
+def write_hdfs(path: Path) -> None:
+    '''write file into HDFS container'''
+
+    namenode_host='localhost'
+    port=8020
+
+    # Connect with HaDoop File System
+    print('Connecting to HDFS...')
+    hdfs = HDFileSystem(namenode_host, port)
+    print('Done...')
+
+    #Create dir
+    dir = '/phong_huynh/'
+    if not hdfs.exists(dir):
+        print(f"Directory {dir} doesn't exists! Create {dir}")
+        hdfs.mkdir(dir)
+        print('Done...')
+
+    local_path = path
+    target = str(local_path).split('/')[-1]
+
+    # Pusing file into HDFS
+    try:
+        print(f'HDFS: Start pusing file')
+        hdfs.put(local_path, f'{dir}{target}')
+        print(f'HDFS: Done pushing {path} into {dir}')
+    except Exception as e:
+        print(f"Error: {e}")
+
 
 @flow()
-def etl_web_to_gcs() -> None:
+def etl_to_hdfs() -> None:
     """The main etl function"""
     color = "yellow"
     year = 2021
@@ -46,8 +72,8 @@ def etl_web_to_gcs() -> None:
     df = fetch(dataset_url)
     df_clean = clean(df)
     path = write_local(df_clean, color, dataset_file)
-    write_gcs(path)
+    write_hdfs(path)
     
 
 if __name__ == "__main__":
-    etl_web_to_gcs()
+    etl_to_hdfs()
