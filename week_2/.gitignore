@@ -2,3 +2,4 @@ db2_database
 data/*
 ny_taxi_pgdata
 .ipynb_checkpoints
+__pycache__

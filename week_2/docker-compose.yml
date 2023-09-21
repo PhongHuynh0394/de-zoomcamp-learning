@@ -1,19 +1,33 @@
 # docker exec -it db2 bash -c 'su - db2inst1'
-include:
-  - path: ../hadoop/docker-compose.yml
+# include:
+#   - path: ../hadoop/docker-compose.yml
 
 services:
-  pg_db:
-    container_name: postgres
-    image: postgres:13
-    env_file:
-      - .env
-    volumes:
-      - ./ny_taxi_pgdata:/var/lib/postgresql/data:rw
+  clickhouse:
+    container_name: clickhouse
+    image: docker.io/bitnami/clickhouse:23
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
     ports:
-      - 5432:5432
-    networks:
-      - docker-net 
+      - '8123:8123'
+      - 9000:9000
+    volumes:
+      - clickhouse_data:/bitnami/clickhouse
+    # networks:
+    #   - docker-net
+
+  # pg_db:
+  #   container_name: postgres
+  #   image: postgres:13
+  #   env_file:
+  #     - .env
+  #   volumes:
+  #     - ./ny_taxi_pgdata:/var/lib/postgresql/data:rw
+  #   ports:
+  #     - 5432:5432
+  #   networks:
+  #     - docker-net 
+
 
   # pgadmin:
   #   container_name: pgadmin
@@ -35,3 +49,6 @@ services:
   #     - SERVICE_NAME=hiveserver2
   #   networks:
   #     - docker-net
+volumes:
+  clickhouse_data:
+    driver: local

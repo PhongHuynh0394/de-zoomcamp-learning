@@ -1,4 +1,5 @@
 import pandas as pd
+from clickhouse_driver import Client
 from pathlib import Path
 from hdfs3 import HDFileSystem
 from time import time
@@ -98,6 +99,21 @@ def write_hdfs(params, df: pd.DataFrame) -> None:
         print(f"Error: {e}")
 
 
+@task(log_prints=True)
+def ingest_ch(df: pd.DataFrame) -> None:
+    '''full load data into Clickhouse warehouse'''
+    host = 'localhost'
+    client = Client(host)
+
+    print(client.execute('show databases'))
+
+    try:
+        print('pusing data into clickhouse')
+        client.insert_dataframe(df)
+        print('Done...')
+    except Exception as e:
+        print(f"Error: {e}")
+
 @flow(name="Ingest flow")
 def main():
     URL="https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2021-01.parquet"
@@ -107,9 +123,10 @@ def main():
 
     # data = transform_data(raw_data)
     data_extracted = extract_data(URL)
-    ingest_data_psql(args, data_extracted)
-    raw_data = extract_psql(args)
-    write_hdfs(args, raw_data)
+    ingest_ch(data_extracted)
+    # ingest_data_psql(args, data_extracted)
+    # raw_data = extract_psql(args)
+    # write_hdfs(args, raw_data)
 
 if __name__ == "__main__":
     main()
