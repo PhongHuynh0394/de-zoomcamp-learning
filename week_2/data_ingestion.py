@@ -70,12 +70,12 @@ def extract_psql(params) -> pd.DataFrame:
     return df
 
 @task(log_prints=True)
-def write_hdfs(params, df: pd.DataFrame) -> None:
+def write_hdfs(df: pd.DataFrame, table_name: str, layer: str) -> None:
     '''write file into HDFS container'''
 
     namenode_host='localhost'
     port=8020
-    table_name = params.table_name
+    # table_name = params.table_name
 
     # Connect with HaDoop File System
     print('Connecting to HDFS...')
@@ -83,7 +83,7 @@ def write_hdfs(params, df: pd.DataFrame) -> None:
     print('Done...')
 
     #Create dir
-    dir = '/raw_data/'
+    dir = f'/{layer}/'
     if not hdfs.exists(dir):
         print(f"Directory {dir} doesn't exists! Create {dir}")
         hdfs.mkdir(dir)
@@ -100,17 +100,71 @@ def write_hdfs(params, df: pd.DataFrame) -> None:
 
 
 @task(log_prints=True)
-def ingest_ch(df: pd.DataFrame) -> None:
-    '''full load data into Clickhouse warehouse'''
+def extract_hdfs(table_name: str, layer: str) -> pd.DataFrame:
+    '''Extract data from HDFS layer'''
+    namenode_host='localhost'
+    port=8020
+    # table_name = params.table_name
+
+    # Connect with HaDoop File System
+    print('Connecting to HDFS...')
+    hdfs = HDFileSystem(namenode_host, port)
+    print('Done...')
+
+    destination = f"/{layer}/{table_name}.parquet"
+    if not hdfs.exists(destination):
+        print("File doesn't exists")
+        return None
+    try:
+        print(f'Get data from {destination}')
+        with open(f"{destination}", "rb") as data:
+            df = pd.read_parquet(data)
+        print('Done')
+        return df
+    except Exception as e:
+        print(e)
+
+@task(log_prints=True)
+def hdfs_to_ch(df: pd.DataFrame) -> None:
+    '''full load data from HDFS into Clickhouse warehouse'''
     host = 'localhost'
     client = Client(host)
 
-    print(client.execute('show databases'))
+    # Create table
+    try:
+        print("create table ny_taxi_data")
+        client.execute("""
+        CREATE TABLE IF NOT EXISTS yellow_taxi_data (
+        "VendorID" BIGINT, 
+        tpep_pickup_datetime TIMESTAMP, 
+        tpep_dropoff_datetime TIMESTAMP, 
+        passenger_count FLOAT(53), 
+        trip_distance FLOAT(53), 
+        "RatecodeID" FLOAT(53), 
+        store_and_fwd_flag TEXT, 
+        "PULocationID" BIGINT, 
+        "DOLocationID" BIGINT, 
+        payment_type BIGINT, 
+        fare_amount FLOAT(53), 
+        extra FLOAT(53), 
+        mta_tax FLOAT(53), 
+        tip_amount FLOAT(53), 
+        tolls_amount FLOAT(53), 
+        improvement_surcharge FLOAT(53), 
+        total_amount FLOAT(53), 
+        congestion_surcharge FLOAT(53), 
+        airport_fee FLOAT(53)
+    ) ENGINE = Memory
+    """)
+        print('Done...')
+    except Exception as e:
+        print(e)
+
 
     try:
         print('pusing data into clickhouse')
-        client.insert_dataframe(df)
-        print('Done...')
+        rows = client.insert_dataframe("insert into yellow_taxi_data values",df, settings=dict(use_numpy=True))
+        print(f'Done... pushing {rows} data into clickhouse')
     except Exception as e:
         print(f"Error: {e}")
 
@@ -123,10 +177,10 @@ def main():
 
     # data = transform_data(raw_data)
     data_extracted = extract_data(URL)
-    ingest_ch(data_extracted)
-    # ingest_data_psql(args, data_extracted)
     # raw_data = extract_psql(args)
-    # write_hdfs(args, raw_data)
+    write_hdfs(data_extracted, "test", "raw_data")
+    data_hdfs = extract_hdfs("test", "raw_data")
+    ingest_data_psql(args, data_hdfs)
 
 if __name__ == "__main__":
     main()

@@ -1,7 +1,7 @@
 networks:
   docker-net:
     name: docker-net
-    external: true
+    # external: true
 
 services:
  namenode:
@@ -10,6 +10,7 @@ services:
     hostname: namenode
     command: ["hdfs", "namenode"]
     ports:
+      - 50070:50070
       - 9870:9870
       - 8020:8020
     env_file:
@@ -21,12 +22,19 @@ services:
 
  datanode:
     container_name: datanode
+    hostname: datanode
     image: apache/hadoop:3
     command: ["hdfs", "datanode"]
+    ports:
+      - 50010:50010
+      - 50075:50075
+      - 50020:50020
     env_file:
       - ./config      
     networks:
       - docker-net
+    volumes:
+    - ./data/datanode:/tmp/hadoop-root/dfs/data
 
  resourcemanager:
     container_name: resourcemanager
@@ -49,4 +57,19 @@ services:
       - ./config
     networks:
       - docker-net
-
+  # namenode:
+  #   image: harisekhon/hadoop
+  #   container_name: namenode 
+  #   ports:
+  #     - 8042:8042
+  #     - 8088:8088
+  #     - 19888:19888
+  #     - 8020:8020
+  #     - 50070:50070
+  #     - 50075:50075
+  #     - 50010:50010
+  #     - 50020:50020
+  #     - 50090:50090
+  #   command: ["hdfs", "namenode"]
+  #   networks:
+  #     - docker-net

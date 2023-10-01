@@ -1,6 +1,6 @@
 # docker exec -it db2 bash -c 'su - db2inst1'
-# include:
-#   - path: ../hadoop/docker-compose.yml
+include:
+  - path: ../hadoop/docker-compose.yml
 
 services:
   clickhouse:
@@ -13,8 +13,8 @@ services:
       - 9000:9000
     volumes:
       - clickhouse_data:/bitnami/clickhouse
-    # networks:
-    #   - docker-net
+    networks:
+      - docker-net
 
   # pg_db:
   #   container_name: postgres
