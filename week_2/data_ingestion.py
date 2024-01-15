@@ -69,6 +69,7 @@ def extract_psql(params) -> pd.DataFrame:
 
     return df
 
+
 @task(log_prints=True)
 def write_hdfs(df: pd.DataFrame, table_name: str, layer: str) -> None:
     '''write file into HDFS container'''
@@ -168,7 +169,7 @@ def hdfs_to_ch(df: pd.DataFrame) -> None:
     except Exception as e:
         print(f"Error: {e}")
 
-@flow(name="Ingest flow")
+@flow(name="New flow")
 def main():
     URL="https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2021-01.parquet"
     parser = arg.ArgumentParser(description="Ingest Parquet to Postgres")
@@ -177,10 +178,10 @@ def main():
 
     # data = transform_data(raw_data)
     data_extracted = extract_data(URL)
+    ingest_data_psql(args, data_extracted)
     # raw_data = extract_psql(args)
-    write_hdfs(data_extracted, "test", "raw_data")
-    data_hdfs = extract_hdfs("test", "raw_data")
-    ingest_data_psql(args, data_hdfs)
+    # write_hdfs(data_extracted, "test", "raw_data")
+    # data_hdfs = extract_hdfs("test", "raw_data")
 
 if __name__ == "__main__":
     main()

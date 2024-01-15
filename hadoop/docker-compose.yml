@@ -2,74 +2,68 @@ networks:
   docker-net:
     name: docker-net
     # external: true
-
 services:
- namenode:
-    container_name: namenode
-    image: apache/hadoop:3
-    hostname: namenode
-    command: ["hdfs", "namenode"]
-    ports:
-      - 50070:50070
-      - 9870:9870
-      - 8020:8020
-    env_file:
-      - ./config
-    environment:
-        ENSURE_NAMENODE_DIR: "/tmp/hadoop-root/dfs/name"
-    networks:
-      - docker-net
+   namenode:
+      container_name: namenode
+      image: apache/hadoop:3
+      hostname: namenode
+      command: ["hdfs", "namenode"]
+      ports:
+        - 9870:9870
+        - 8020:8020
+        - 9000:9000
+      env_file:
+        - ./config
+      environment:
+        ENSURE_NAMENODE_DIR: "/tmp/hadoop-hadoop/dfs/name"
+      volumes:
+        - ./namenode:/tmp/hadoop-root/dfs/name
+        - hadoop_namenode:/tmp/hadoop-root/dfs/name
+      networks:
+        - docker-net
 
- datanode:
-    container_name: datanode
-    hostname: datanode
-    image: apache/hadoop:3
-    command: ["hdfs", "datanode"]
-    ports:
-      - 50010:50010
-      - 50075:50075
-      - 50020:50020
-    env_file:
-      - ./config      
-    networks:
-      - docker-net
-    volumes:
-    - ./data/datanode:/tmp/hadoop-root/dfs/data
+   datanode:
+      image: apache/hadoop:3
+      container_name: datanode
+      hostname: datanode 
+      command: ["hdfs", "datanode"]
+      ports:
+        - 9864:9864
+        - 9866:9866
+      expose:
+        - 50010
+        - 9866
+      env_file:
+        - ./config      
+      volumes:
+        - hadoop_datanode:/tmp/hadoop-root/dfs/data
+        - ./datanode:/tmp/hadoop-root/dfs/data
+      networks:
+        - docker-net
 
- resourcemanager:
-    container_name: resourcemanager
-    image: apache/hadoop:3
-    hostname: resourcemanager
-    command: ["yarn", "resourcemanager"]
-    ports:
-       - 8088:8088
-    env_file:
-      - ./config
-    volumes:
-      - ./test.sh:/opt/test.sh
-    networks:
-      - docker-net
- nodemanager:
-    container_name: nodemanager
-    image: apache/hadoop:3
-    command: ["yarn", "nodemanager"]
-    env_file:
-      - ./config
-    networks:
-      - docker-net
-  # namenode:
-  #   image: harisekhon/hadoop
-  #   container_name: namenode 
-  #   ports:
-  #     - 8042:8042
-  #     - 8088:8088
-  #     - 19888:19888
-  #     - 8020:8020
-  #     - 50070:50070
-  #     - 50075:50075
-  #     - 50010:50010
-  #     - 50020:50020
-  #     - 50090:50090
-  #   command: ["hdfs", "namenode"]
-  #   networks:
-  #     - docker-net
+   resourcemanager:
+      image: apache/hadoop:3
+      hostname: resourcemanager
+      command: ["yarn", "resourcemanager"]
+      ports:
+         - 8088:8088
+      env_file:
+        - ./config
+      volumes:
+        - ./test.sh:/opt/test.sh
+      networks:
+        - docker-net
+
+   nodemanager:
+      image: apache/hadoop:3
+      command: ["yarn", "nodemanager"]
+      env_file:
+        - ./config
+      ports:
+        - 8188:8188
+      networks:
+        - docker-net
+
+volumes:
+  hadoop_datanode:
+  hadoop_namenode:
