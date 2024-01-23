@@ -1,5 +1,9 @@
 /ny_taxi_pgdata
 /notebook/.ipynb_checkpoints
 /notebook/output.parquet
-/GCP/user-service-key.json
 
+/GCP/key/my_cre.json
+/GCP/.terraform
+/GCP/.terraform.lock.hcl
+/GCP/terraform.tfstate
+/GCP/terraform.tfstate.backup

@@ -31,10 +31,9 @@ services:
     volumes:
       - ./notebook:/home/jovyan/work
     environment:
-      - JUPYTER_TOKEN="pass"
+      - JUPYTER_TOKEN=pass
     ports:
-      - 8889:8889
-    command: jupyter notebook
+      - 8888:8888
     networks:
       - pg_net 
   

@@ -4,5 +4,7 @@ WORKDIR /home/jovyan/work
 
 COPY . .
 
-RUN sudo apt install 
+USER root
+
+RUN apt install 
 RUN pip install --upgrade pip && pip install -r requirements.txt

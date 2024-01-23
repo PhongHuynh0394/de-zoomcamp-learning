@@ -11,13 +11,14 @@ terraform {
 provider "google" {
   project = var.project
   region = var.region
-  // crecredentials = file(var.credentials) # use this if do not want to set env-var GOOGLE_APPLICATION_CREDENTIALS
+  credentials = file(var.credentials) # use this if do not want to set env-var GOOGLE_APPLICATION_CREDENTIALS
 }
 
-# data lake bucket
+# data lake bucket (GCS)
 resource "google_storage_bucket" "data-lake-bucket" {
   name = "${local.data_lake_bucket}_${var.project}" #Concat DL bucket & project name
   location = var.region
+  force_destroy = true
 
   # optional, but recommended settings:
   storage_class = var.storage_class
@@ -27,17 +28,14 @@ resource "google_storage_bucket" "data-lake-bucket" {
     enabled = true
   }
 
-  
   lifecycle_rule {
     action {
       type = "Delete"
     }
     condition {
-      age = 30 //days
+      age = 1 //days
     }
   }
-
-  force_destroy = true
 }
 # DWH
 # Ref: https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/bigquery_dataset
