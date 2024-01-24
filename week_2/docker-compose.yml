@@ -1,59 +1,18 @@
-volumes:
-  clickhouse_data:
-    driver: local
-
-# include:
-#   - path: ../hadoop/docker-compose.yml
-  # - path: ../../Docker/dremio/docker-compose.yml
-
-# networks:
-#   docker-net:
-#     name: docker-net
-
+version: '3'
 services:
-  clickhouse:
-    container_name: clickhouse
-    image: docker.io/bitnami/clickhouse:23
+  magic:
+    image: mageai/mageai:latest
+    command: mage start ${PROJECT_NAME}
+    env_file:
+      - .env
+    build:
+      context: .
+      dockerfile: Dockerfile
     environment:
-      - ALLOW_EMPTY_PASSWORD=yes
+      USER_CODE_PATH: /home/src/${PROJECT_NAME}
+      ENV: ${ENV}
     ports:
-      - '8123:8123'
-      # - 9000:9000
+      - 6789:6789
     volumes:
-      - clickhouse_data:/bitnami/clickhouse
-    # networks:
-    #   - docker-net
-
-#   pg_db:
-#     container_name: postgres
-#     image: postgres:13
-#     env_file:
-#       - .env
-#     volumes:
-#       - ./ny_taxi_pgdata:/var/lib/postgresql/data:rw
-#     ports:
-#       - 5432:5432
-#     networks:
-#       - docker-net 
-
-
-#   # pgadmin:
-#   #   container_name: pgadmin
-#   #   image: dpage/pgadmin4
-#   #   env_file:
-#   #     - .env
-#   #   ports:
-#   #     - 8080:80
-#   #   networks:
-#   #     - docker-net 
-
-#   # hive:
-#   #   container_name: hive
-#   #   image: apache/hive:4.0.0-beta-1
-#   #   ports:
-#   #     - 10000:10000
-#   #     - 10002:10002
-#   #   environment:
-#   #     - SERVICE_NAME=hiveserver2
-#   #   networks:
-#   #     - docker-net
+      - .:/home/src/
+    restart: on-failure:5
