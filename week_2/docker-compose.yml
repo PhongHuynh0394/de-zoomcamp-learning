@@ -16,3 +16,23 @@ services:
     volumes:
       - .:/home/src/
     restart: on-failure:5
+    networks:
+      - pg_net
+
+  pg_db:
+    container_name: postgres
+    image: postgres:13
+    hostname: postgres
+    env_file:
+      - .env
+    volumes:
+      - ../week_1/ny_taxi_pgdata:/var/lib/postgresql/data:rw
+    ports:
+      - 5432:5432
+    networks:
+      - pg_net
+
+networks:
+  pg_net:
+    driver: bridge
+    name: pg_net

@@ -1,0 +1,11 @@
+triggers:
+- envs: []
+  name: vibrant wildflower
+  pipeline_uuid: api_to_psql
+  schedule_interval: null
+  schedule_type: null
+  settings: null
+  sla: null
+  start_time: null
+  status: inactive
+  variables: null
